@@ -1,0 +1,6 @@
+body,
+html {
+	background-color: #231f20;
+	color: #f6f8ff;
+}
+/* TODO possibly delete styles folder after Tailwind install */
