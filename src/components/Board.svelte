@@ -2,10 +2,10 @@
 	import { flip } from "svelte/animate"
 	import { dndzone } from "svelte-dnd-action"
 	import InPlaceEdit from "../shared/InPlaceEdit.svelte"
-	import Todos from "../stores/data"
+	import { Lists, Items } from "../stores/data"
 	import { debug, prevent_default } from "svelte/internal"
 
-	let columnItems = $Todos // TODO fix writing to todos directly!
+	let columnItems = $Items // TODO fix writing to todos directly!
 
 	const flipDurationMs = 300
 
@@ -30,7 +30,7 @@
 
 	// Delete a todo
 	function onRightClick(todoId) {
-		Todos.update((listOfTodoLists) => {
+		Items.update((listOfTodoLists) => {
 			return listOfTodoLists.map((todoList) => {
 				todoList.items = todoList.items.filter((todo) => todo.id !== todoId)
 				return todoList
@@ -46,12 +46,12 @@
 			valid = true
 
 			//validate todo is greater than 1 character in length
-			if (newValue.trim().length < 1) {
+			if (false) { //if (newValue.trim().length < 1) {
 				valid = false
 				console.log("Todo must be at least 1 character long!")
 
 				// TODO delete here is not working!
-				Todos.update((listOfTodoLists) => {
+				Items.update((listOfTodoLists) => {
 					return listOfTodoLists.map((todoList) => {
 						todoList.items = todoList.items.filter((todo) => todo.id !== todoId)
 						return todoList
@@ -62,7 +62,7 @@
 
 			// update todo
 			if (valid) {
-				Todos.update((listOfTodoLists) => {
+				Items.update((listOfTodoLists) => {
 					return listOfTodoLists.map((todoList) => {
 						if (todoList.items.id === todoId) {
 							todoList.items.name = newValue
@@ -72,27 +72,35 @@
 					})
 				})
 			}
-			console.log($Todos)
+			console.log($Items)
 		}
 	}
+
+	const filteredByList=(value)=>{
+		return $Items.filter(i => i.list === value);
+	}
+	$: filteredByList(1);
+	$: filteredByList(2);
+	$: filteredByList(3);
+	$: filteredByList(4);
 </script>
 
 <section
 	class="board"
-	use:dndzone={{ items: $Todos, flipDurationMs, type: "columns" }}
+	use:dndzone={{ items: $Items, flipDurationMs, type: "columns" }}
 	on:consider={handleDndConsiderColumns}
 	on:finalize={handleDndFinalizeColumns}
 >
-	{#each $Todos as column (column.id)}
+	{#each $Lists as list (list.id)}
 		<div class="column" animate:flip={{ duration: flipDurationMs }}>
-			<div class="column-title">{column.title}</div>
+			<div class="column-title">{list.title}</div>
 			<div
 				class="column-content"
-				use:dndzone={{ items: column.items, flipDurationMs }}
-				on:consider={(e) => handleDndConsiderCards(column.id, e)}
-				on:finalize={(e) => handleDndFinalizeCards(column.id, e)}
+				use:dndzone={{ items: list.items, flipDurationMs }}
+				on:consider={(e) => handleDndConsiderCards(list.id, e)}
+				on:finalize={(e) => handleDndFinalizeCards(list.id, e)}
 			>
-				{#each column.items as item (item.id)}
+				{#each filteredByList(list.id) as item (item.id)}
 					<div
 						class="card"
 						animate:flip={{ duration: flipDurationMs }}
