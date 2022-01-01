@@ -30,12 +30,9 @@
 
 	// Delete a todo
 	function onRightClick(todoId) {
-		Items.update((listOfTodoLists) => {
-			return listOfTodoLists.map((todoList) => {
-				todoList.items = todoList.items.filter((todo) => todo.id !== todoId)
-				return todoList
-			})
-		})
+		const toDelete = $Items.find((t) => t.id === todoId);
+		toDelete.deletedAt = Date.now();
+		console.log(`Deleted: ${todoId}`, toDelete);
 	}
 
 	// TODO fix submit function
@@ -77,7 +74,7 @@
 	}
 
 	const filteredByList=(value)=>{
-		return $Items.filter(i => i.list === value);
+		return $Items.filter(i => i.list === value && i.deletedAt === null);
 	}
 	$: filteredByList(1);
 	$: filteredByList(2);
@@ -96,7 +93,7 @@
 			<div class="column-title">{list.title}</div>
 			<div
 				class="column-content"
-				use:dndzone={{ items: list.items, flipDurationMs }}
+				use:dndzone={{ items: filteredByList(list.id), flipDurationMs }}
 				on:consider={(e) => handleDndConsiderCards(list.id, e)}
 				on:finalize={(e) => handleDndFinalizeCards(list.id, e)}
 			>
