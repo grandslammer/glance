@@ -12,20 +12,17 @@
 	let valid = false
 
 	function handleDndConsiderColumns(e) {
-		columnItems = e.detail.items
+		console.log('handleDndConsiderColumns: e', e);
 	}
 	function handleDndFinalizeColumns(e) {
-		columnItems = e.detail.items
+		console.log('handleDndFinalizeColumns: e', e);
 	}
-	function handleDndConsiderCards(cid, e) {
-		const colIdx = columnItems.findIndex((c) => c.id === cid)
-		columnItems[colIdx].items = e.detail.items
-		columnItems = [...columnItems]
+	function handleDndConsiderCards(lid, e) {
+		console.log('handleDndConsiderCards: list id', lid, 'e', e);
+
 	}
-	function handleDndFinalizeCards(cid, e) {
-		const colIdx = columnItems.findIndex((c) => c.id === cid)
-		columnItems[colIdx].items = e.detail.items
-		columnItems = [...columnItems]
+	function handleDndFinalizeCards(lid, e) {
+		console.log('handleDndFinalizeCards: list id', lid, 'e', e);
 	}
 
 	// Delete a todo
@@ -74,7 +71,13 @@
 	}
 
 	const filteredByList=(value)=>{
-		return $Items.filter(i => i.list === value && i.deletedAt === null);
+		let count = 0
+		let items = $Items.filter(i => i.list === value && i.deletedAt === null).sort(i => i.position);
+		items.forEach(function(item) {
+			console.log(item)
+			item.rendered_position = count++
+		})
+		return items;
 	}
 	$: filteredByList(1);
 	$: filteredByList(2);
@@ -90,6 +93,7 @@
 >
 	{#each $Lists as list (list.id)}
 		<div class="column" animate:flip={{ duration: flipDurationMs }}>
+			<div class="column-id" hidden="True">{list.id}</div>
 			<div class="column-title">{list.title}</div>
 			<div
 				class="column-content"
@@ -97,13 +101,14 @@
 				on:consider={(e) => handleDndConsiderCards(list.id, e)}
 				on:finalize={(e) => handleDndFinalizeCards(list.id, e)}
 			>
-				{#each filteredByList(list.id) as item (item.id)}
+			{#each filteredByList(list.id) as item (item.id)}
 					<div
 						class="card"
 						animate:flip={{ duration: flipDurationMs }}
 						on:contextmenu|preventDefault={() => onRightClick(item.id)}
 					>
 						<InPlaceEdit bind:value={item.name} on:submit={submit("text")} />
+						<InPlaceEdit bind:value={item.rendered_position} />
 					</div>
 				{/each}
 			</div>
