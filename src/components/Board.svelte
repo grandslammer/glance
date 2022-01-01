@@ -2,40 +2,34 @@
 	import { flip } from "svelte/animate"
 	import { dndzone } from "svelte-dnd-action"
 	import InPlaceEdit from "../shared/InPlaceEdit.svelte"
-	import Todos from "../stores/data"
+	import { Lists, Items } from "../stores/data"
 	import { debug, prevent_default } from "svelte/internal"
 
-	let columnItems = $Todos // TODO fix writing to todos directly!
+	let columnItems = $Items // TODO fix writing to todos directly!
 
 	const flipDurationMs = 300
 
 	let valid = false
 
 	function handleDndConsiderColumns(e) {
-		columnItems = e.detail.items
+		console.log('handleDndConsiderColumns: e', e);
 	}
 	function handleDndFinalizeColumns(e) {
-		columnItems = e.detail.items
+		console.log('handleDndFinalizeColumns: e', e);
 	}
-	function handleDndConsiderCards(cid, e) {
-		const colIdx = columnItems.findIndex((c) => c.id === cid)
-		columnItems[colIdx].items = e.detail.items
-		columnItems = [...columnItems]
+	function handleDndConsiderCards(lid, e) {
+		console.log('handleDndConsiderCards: list id', lid, 'e', e);
+
 	}
-	function handleDndFinalizeCards(cid, e) {
-		const colIdx = columnItems.findIndex((c) => c.id === cid)
-		columnItems[colIdx].items = e.detail.items
-		columnItems = [...columnItems]
+	function handleDndFinalizeCards(lid, e) {
+		console.log('handleDndFinalizeCards: list id', lid, 'e', e);
 	}
 
 	// Delete a todo
 	function onRightClick(todoId) {
-		Todos.update((listOfTodoLists) => {
-			return listOfTodoLists.map((todoList) => {
-				todoList.items = todoList.items.filter((todo) => todo.id !== todoId)
-				return todoList
-			})
-		})
+		const toDelete = $Items.find((t) => t.id === todoId);
+		toDelete.deletedAt = Date.now();
+		console.log(`Deleted: ${todoId}`, toDelete);
 	}
 
 	// TODO fix submit function
@@ -46,12 +40,12 @@
 			valid = true
 
 			//validate todo is greater than 1 character in length
-			if (newValue.trim().length < 1) {
+			if (false) { //if (newValue.trim().length < 1) {
 				valid = false
 				console.log("Todo must be at least 1 character long!")
 
 				// TODO delete here is not working!
-				Todos.update((listOfTodoLists) => {
+				Items.update((listOfTodoLists) => {
 					return listOfTodoLists.map((todoList) => {
 						todoList.items = todoList.items.filter((todo) => todo.id !== todoId)
 						return todoList
@@ -62,7 +56,7 @@
 
 			// update todo
 			if (valid) {
-				Todos.update((listOfTodoLists) => {
+				Items.update((listOfTodoLists) => {
 					return listOfTodoLists.map((todoList) => {
 						if (todoList.items.id === todoId) {
 							todoList.items.name = newValue
@@ -72,33 +66,49 @@
 					})
 				})
 			}
-			console.log($Todos)
+			console.log($Items)
 		}
 	}
+
+	const filteredByList=(value)=>{
+		let count = 0
+		let items = $Items.filter(i => i.list === value && i.deletedAt === null).sort(i => i.position);
+		items.forEach(function(item) {
+			console.log(item)
+			item.rendered_position = count++
+		})
+		return items;
+	}
+	$: filteredByList(1);
+	$: filteredByList(2);
+	$: filteredByList(3);
+	$: filteredByList(4);
 </script>
 
 <section
 	class="board"
-	use:dndzone={{ items: $Todos, flipDurationMs, type: "columns" }}
+	use:dndzone={{ items: $Items, flipDurationMs, type: "columns" }}
 	on:consider={handleDndConsiderColumns}
 	on:finalize={handleDndFinalizeColumns}
 >
-	{#each $Todos as column (column.id)}
+	{#each $Lists as list (list.id)}
 		<div class="column" animate:flip={{ duration: flipDurationMs }}>
-			<div class="column-title">{column.title}</div>
+			<div class="column-id" hidden="True">{list.id}</div>
+			<div class="column-title">{list.title}</div>
 			<div
 				class="column-content"
-				use:dndzone={{ items: column.items, flipDurationMs }}
-				on:consider={(e) => handleDndConsiderCards(column.id, e)}
-				on:finalize={(e) => handleDndFinalizeCards(column.id, e)}
+				use:dndzone={{ items: filteredByList(list.id), flipDurationMs }}
+				on:consider={(e) => handleDndConsiderCards(list.id, e)}
+				on:finalize={(e) => handleDndFinalizeCards(list.id, e)}
 			>
-				{#each column.items as item (item.id)}
+			{#each filteredByList(list.id) as item (item.id)}
 					<div
 						class="card"
 						animate:flip={{ duration: flipDurationMs }}
 						on:contextmenu|preventDefault={() => onRightClick(item.id)}
 					>
 						<InPlaceEdit bind:value={item.name} on:submit={submit("text")} />
+						<InPlaceEdit bind:value={item.rendered_position} />
 					</div>
 				{/each}
 			</div>
